@@ -53,14 +53,13 @@ def test_real_polynomial_has_real_complementary_polynomial(degree: int, num_mode
 
 
 @pytest.mark.parametrize("degree", [2, 3, 4, 5, 10])
-@pytest.mark.parametrize("negative_power", [0, 1, 2])
-def test_fft_qsp_on_random_unitaries(degree: int, negative_power: int):
+@pytest.mark.parametrize("bitsize", [1, 2, 3])
+def test_fft_qsp_on_random_unitaries(degree: int, bitsize: int):
     random_state = np.random.RandomState(102)
     tolerance = 1e-6
     num_modes = 10 * degree
-    bitsize = 2
     for _ in range(5):
         P = random_qsp_polynomial(degree, random_state=random_state)
         U = MatrixGate.random(bitsize=bitsize, random_state=random_state)
         Q = fft_complementary_polynomial(P, tolerance=tolerance, num_modes=num_modes)
-        verify_generalized_qsp(U, P, negative_power=negative_power, Q=Q, tolerance=tolerance)
+        verify_generalized_qsp(U, P, Q=Q, tolerance=tolerance)
