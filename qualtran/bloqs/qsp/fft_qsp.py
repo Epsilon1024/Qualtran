@@ -11,18 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Sequence, Optional, Union
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
 
 def fft_complementary_polynomial(
-    P: Union[Sequence[float], Sequence[complex]], tolerance: float = 1e-4, num_modes: Optional[int] = None
+    P: Union[Sequence[float], Sequence[complex]],
+    tolerance: float = 1e-4,
+    num_modes: Optional[int] = None,
 ):
     """Computes the Q polynomial given P
 
     Computes polynomial $Q$ of degree at-most that of $P$, satisfying
         $$ \abs{P(e^{i\theta})}^2 + \abs{Q(e^{i\theta})}^2 = 1 $$
+
+    Note: In order to save memory, this method uses local functions to calculate intermediate steps in the algorithm.
+    This prevents us from having to store the output of each step and significantly cuts down on memory usage).
 
     Args:
           P: Co-efficients of a complex QSP polynomial
@@ -41,11 +46,11 @@ def fft_complementary_polynomial(
 
     # Experimentally, the plot of error vs num_modes flattens around 5*degree.
     if num_modes is None:
-        num_modes = int(2.75*P.shape[0]+91)
+        num_modes = 5 * len(P)
 
     # FFT works best when num_modes is even
-    if num_modes%2 == 1:
-        num_modes +=1
+    if num_modes % 2 == 1:
+        num_modes += 1
 
     def _scale(x):
         """Scale input according to tolerance."""
@@ -80,6 +85,10 @@ def fft_complementary_polynomial(
         """Compute coefficients of Q
 
         This runs the entire process calling the other intermediate methods.
+
+        This method follows Algorithm 2 of the paper. In order to save memory, however, each intermediate step
+        is written as a function so that the output is not stored in memory. This method explicitly runs
+        Eq. 3.12 and 3.13 of the paper and calls on intermediate functions for all other steps.
 
         Args:
             poly: The input polynomial, P.
