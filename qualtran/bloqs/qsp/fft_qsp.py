@@ -11,13 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from typing import Sequence, Union
+from typing import Sequence, Optional, Union
 
 import numpy as np
 
 
 def fft_complementary_polynomial(
-    P: Union[Sequence[float], Sequence[complex]], tolerance: float = 1e-4, num_modes: int = 500
+    P: Union[Sequence[float], Sequence[complex]], tolerance: float = 1e-4, num_modes: Optional[int] = None
 ):
     """Computes the Q polynomial given P
 
@@ -38,7 +38,14 @@ def fft_complementary_polynomial(
         Berntson and Sunderhauf. (2024). Figure 1.
     """
     P = np.array(P)
-    N = num_modes
+
+    # Experimentally, the plot of error vs num_modes flattens around 5*degree.
+    if num_modes is None:
+        num_modes = int(2.75*P.shape[0]+91)
+
+    # FFT works best when num_modes is even
+    if num_modes%2 == 1:
+        num_modes +=1
 
     def _scale(x):
         """Scale input according to tolerance."""
@@ -46,7 +53,7 @@ def fft_complementary_polynomial(
 
     def _pad_poly(x):
         """Pad P to FFT dimension N"""
-        return np.pad(_scale(x), (0, N - 1))
+        return np.pad(_scale(x), (0, num_modes - 1))
 
     def _p_eval(x):
         """Evaluate P(omega) at roots of unity omega"""
@@ -67,7 +74,7 @@ def fft_complementary_polynomial(
 
     def _get_modes(x):
         """Apply Fourier multiplier in Fourier space"""
-        return np.fft.ifft(_fourier_multiplier(_get_log(x), N), norm="forward")
+        return np.fft.ifft(_fourier_multiplier(_get_log(x), num_modes), norm="forward")
 
     def calculate_coeff(poly: np.ndarray) -> np.ndarray:
         """Compute coefficients of Q
